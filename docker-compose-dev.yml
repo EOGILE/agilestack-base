@@ -1,0 +1,217 @@
+version: "2"
+
+networks:
+  default:
+    external:
+      name: agilestacknet
+
+volumes:
+  shared:
+    external:
+      name: agilestack-shared
+
+services:
+  # Consul - Tool for service discovery, monitoring and configuration
+  # https://www.consul.io/
+  consul:
+    image: gliderlabs/consul-server
+    container_name: agilestack-consul
+    restart: on-failure
+    ports:
+      - "8500:8500" # REST API & UI
+      - "8600:8600/udp" # DNS
+    labels:
+      SERVICE_IGNORE: "true"
+    command: "-bootstrap -ui"
+
+  # Registrator - Service registry bridge for Docker
+  # http://gliderlabs.com/registrator/
+  registrator:
+    image: eogile/registrator
+    container_name: agilestack-registrator
+    depends_on:
+      - consul
+    restart: on-failure
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock
+    command: "-internal -network agilestacknet consul://consul.agilestacknet:8500"
+
+  # Fabio - Proxy & load balancer
+  # https://github.com/eBay/fabio
+  fabio:
+    image: eogile/fabio
+    container_name: agilestack-fabio
+    depends_on:
+      - consul
+    restart: on-failure
+    volumes:
+      - "$PWD/fabio.properties:/etc/fabio/fabio.properties"
+    ports:
+      - "8080:9999" # HTTP server
+      - "9998:9998" # UI
+    labels:
+      SERVICE_IGNORE: "true" # Fabio registers itself to consul
+
+  # Hydra Host - Identity management
+  # https://github.com/ory-am/hydra
+  hydra-host:
+    env_file: .env
+    image: agilestack-hydra-host
+    build:
+      context: ../agilestack-hydra-host
+    container_name: agilestack-hydra-host
+    depends_on:
+      - hydra-postgres
+    restart: always
+    ports:
+      - "9090:9090" # HTTP server
+    labels:
+      SERVICE_NAME: "agilestack-hydra-host"
+      SERVICE_TAGS: "urlprefix-/auth"
+      SERVICE_CHECK_HTTP: "/alive"
+      SERVICE_CHECK_INTERVAL: "10s"
+
+  # Hydra DB - Postgres for Hydra
+  # https://github.com/ory-am/hydra
+  hydra-postgres:
+    image: postgres:9.5
+    container_name: agilestack-hydra-postgres
+    restart: on-failure
+#    ports:
+#      - 5432:5432
+    labels:
+      SERVICE_NAME: "agilestack-hydra-postgres"
+    environment:
+      - POSTGRES_USER=hydra
+      - POSTGRES_PASSWORD=hydra_agilestack
+      - POSTGRES_DB=hydra
+
+  # secu-admin-api
+  secu-admin-api:
+    env_file: .env
+    image: agilestack-secu-admin-api
+    build:
+      context: ../agilestack-secu-admin/secu-admin-api
+    container_name: agilestack-secu-admin-api
+    depends_on:
+      - hydra-host
+      - registrator
+      - fabio
+    restart: always
+    ports:
+      - "8080" # HTTP server
+    labels:
+      SERVICE_TAGS: "urlprefix-/api/secu"
+      SERVICE_CHECK_HTTP: "/status"
+      SERVICE_CHECK_INTERVAL: "10s"
+
+  # login-ui
+  login-ui:
+    env_file: .env
+    image: agilestack-login-ui
+    build:
+      context: ../agilestack-secu-admin/secu-admin-ui
+    container_name: agilestack-login-ui
+    depends_on:
+      - hydra-host
+      - registrator
+      - fabio
+    restart: always
+    ports:
+      - "8080" # HTTP server
+    labels:
+      SERVICE_TAGS: "urlprefix-/login"
+      SERVICE_CHECK_HTTP: "/status"
+      SERVICE_CHECK_INTERVAL: "10s"
+
+  # NATS Messaging broker
+  # http://nats.io/
+  nats:
+    image: nats:0.7.2
+    container_name: agilestack-nats
+    restart: on-failure
+    ports:
+      - "8222:8222" # HTTP
+      - "6222:6222" # Clustering
+      - "4222:4222" # Client
+    labels:
+      SERVICE_4222_NAME: "agilestack-nats-http"
+      SERVICE_6222_NAME: "agilestack-nats-clustering"
+      SERVICE_8222_NAME: "agilestack-nats-client"
+
+  # AgileStack Core
+  core:
+    image: agilestack-core
+    build:
+      context: ../agilestack-core
+    container_name: agilestack-core
+    depends_on:
+      - registrator
+      - nats
+    restart: on-failure
+    environment:
+      - SHARED_FOLDER=${HOME}/agilestack/shared
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - shared:/shared
+
+  # AgileStack Plugin manager UI
+  plugin-manager:
+    image: agilestack-plugin-manager
+    build:
+      context: ../agilestack-plugin-manager
+    container_name: agilestack-plugin-manager
+    depends_on:
+      - registrator
+      - fabio
+      - nats
+    restart: on-failure
+    volumes:
+      - shared:/shared
+
+  # AgileStack root app - database
+  # TODO Remove when Consul store will be used.
+  root-app-postgres:
+    image: postgres:9.5
+    container_name: agilestack-root-app-postgres
+    restart: on-failure
+    ports:
+      - 5433:5432
+    labels:
+      SERVICE_NAME: "agilestack-root-app-postgres"
+    environment:
+      - POSTGRES_USER=agilestack
+      - POSTGRES_PASSWORD=agilestack_power
+      - POSTGRES_DB=agilestack_db
+
+  # The API endpoint for the root application.
+  root-app-builder:
+    image: agilestack-root-app-builder
+    build:
+      context: ../agilestack-root-app/root-app-builder
+    container_name: agilestack-root-app-builder
+    depends_on:
+      - root-app-postgres
+      - registrator
+      - fabio
+    restart: on-failure
+    ports:
+      - "8080"
+    environment:
+      - DB_CONNECTION_STRING=user=agilestack password=agilestack_power dbname=agilestack_db host=root-app-postgres.agilestacknet port=5432 sslmode=disable
+    volumes:
+      - shared:/shared
+
+  # The plugin serving the root application.
+  root-app:
+    image: agilestack-root-app
+    build:
+      context: ../agilestack-root-app/root-app
+    container_name: agilestack-root-app
+    restart: on-failure
+    depends_on:
+      - registrator
+      - fabio
+      - root-app-builder
+    volumes:
+      - shared:/shared
