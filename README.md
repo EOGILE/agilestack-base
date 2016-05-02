@@ -68,9 +68,9 @@ You can also clone :
 
 Then run global commands from `$GOPATH/src/github.com/eogile/agilestack-base`.
 
-Fetch or update the go dependencies with:
+Setup the different modules (eg. fetch or update the go dependencies with):
 
-    make godeps
+    make setup
 
 Build from `agilestack-base` with:
 
