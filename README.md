@@ -43,7 +43,7 @@ In a terminal launched with all the docker environment variable setup (launched 
 
     cd $GOPATH/src/github.com/eogile/agilestack-base
     docker network create agilestacknet
-    docker volume create agilestack-shared
+    docker volume create --name agilestack-shared
     docker-compose up
 
 You should be able to browse to `http://localhost:8080`
