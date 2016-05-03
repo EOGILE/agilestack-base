@@ -1,4 +1,4 @@
-# AGILESTACK RELOADED #
+# AGILESTACK #
 
 CMS for mobile and IOT
 
