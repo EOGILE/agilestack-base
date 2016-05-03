@@ -15,7 +15,7 @@ services:
   # https://www.consul.io/
   consul:
     image: gliderlabs/consul-server
-    container_name: agilestack-consul
+    container_name: consul
     restart: on-failure
     ports:
       - "8500:8500" # REST API & UI
@@ -28,7 +28,7 @@ services:
   # http://gliderlabs.com/registrator/
   registrator:
     image: eogile/registrator
-    container_name: agilestack-registrator
+    container_name: registrator
     depends_on:
       - consul
     restart: on-failure
@@ -40,12 +40,12 @@ services:
   # https://github.com/eBay/fabio
   fabio:
     image: eogile/fabio
-    container_name: agilestack-fabio
+    container_name: fabio
     depends_on:
       - consul
     restart: on-failure
     volumes:
-      - "$PWD/fabio.properties:/etc/fabio/fabio.properties"
+      - "/Users/jblanchard/src/go/src/github.com/eogile/agilestack-base/fabio.properties:/etc/fabio/fabio.properties"
     ports:
       - "8080:9999" # HTTP server
       - "9998:9998" # UI
@@ -59,7 +59,7 @@ services:
     image: agilestack-hydra-host
     build:
       context: ../agilestack-hydra-host
-    container_name: agilestack-hydra-host
+    container_name: hydra-host
     depends_on:
       - hydra-postgres
     restart: always
@@ -75,7 +75,7 @@ services:
   # https://github.com/ory-am/hydra
   hydra-postgres:
     image: postgres:9.5
-    container_name: agilestack-hydra-postgres
+    container_name: hydra-postgres
     restart: on-failure
 #    ports:
 #      - 5432:5432
@@ -128,16 +128,16 @@ services:
   # http://nats.io/
   nats:
     image: nats:0.7.2
-    container_name: agilestack-nats
+    container_name: nats
     restart: on-failure
     ports:
       - "8222:8222" # HTTP
       - "6222:6222" # Clustering
       - "4222:4222" # Client
     labels:
-      SERVICE_4222_NAME: "agilestack-nats-http"
-      SERVICE_6222_NAME: "agilestack-nats-clustering"
-      SERVICE_8222_NAME: "agilestack-nats-client"
+      SERVICE_4222_NAME: "nats-http"
+      SERVICE_6222_NAME: "nats-clustering"
+      SERVICE_8222_NAME: "nats-client"
 
   # AgileStack Core
   core:
@@ -173,7 +173,7 @@ services:
   # TODO Remove when Consul store will be used.
   root-app-postgres:
     image: postgres:9.5
-    container_name: agilestack-root-app-postgres
+    container_name: root-app-postgres
     restart: on-failure
     ports:
       - 5433:5432
