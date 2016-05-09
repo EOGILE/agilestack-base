@@ -46,7 +46,7 @@ services:
     volumes:
       - "$PWD/fabio.properties:/etc/fabio/fabio.properties"
     ports:
-      - "8080:9999" # HTTP server
+      - "80:9999" # HTTP server
       - "9998:9998" # UI
     labels:
       SERVICE_IGNORE: "true" # Fabio registers itself to consul
