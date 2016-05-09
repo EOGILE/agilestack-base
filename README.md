@@ -96,6 +96,24 @@ After having built and tested:
     docker login
     make docker
 
+### How do I deploy to a webserver ###
+
+Prerequisites:
+
+* a linux server with Docker 1.10+, and Docker-Compose 0.6+
+
+Instructions :
+
+* Copy the files `docker-compose-base.yml`, `.env`, `fabio.properties` and `run.sh` to the server.
+* Copy the docker-compose file from the app you want to deploy (e.g. `agilestack-root-app-test/docker-compose-root-app-test.yml`).
+* Run with `run.sh <app-name>` (e.g. `run.sh root-app-test`)
+* When the app container or agilestack has been updated, run the command again.
+
+#### Installing Docker-Compose on a CoreOS server ####
+
+    sudo mkdir -p /opt/bin
+    curl -L https://github.com/docker/compose/releases/download/1.7.1/docker-compose-`uname -s`-`uname -m` | sudo tee /opt/bin/docker-compose > /dev/null
+    sudo chmod +x /opt/bin/docker-compose
 
 ## Contribution guidelines ##
 
