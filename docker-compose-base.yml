@@ -19,7 +19,6 @@ services:
     restart: on-failure
     ports:
       - "8500:8500" # REST API & UI
-      - "8600:8600/udp" # DNS
     labels:
       SERVICE_IGNORE: "true"
     command: "-bootstrap -ui"
@@ -61,8 +60,6 @@ services:
     depends_on:
       - hydra-postgres
     restart: always
-    ports:
-      - "9090:9090" # HTTP server
     labels:
       SERVICE_NAME: "agilestack-hydra-host"
       SERVICE_TAGS: "urlprefix-/auth"
@@ -75,8 +72,6 @@ services:
     image: postgres:9.5
     container_name: hydra-postgres
     restart: on-failure
-#    ports:
-#      - 5432:5432
     labels:
       SERVICE_NAME: "agilestack-hydra-postgres"
     environment:
@@ -94,8 +89,6 @@ services:
       - registrator
       - fabio
     restart: always
-    ports:
-      - "8080" # HTTP server
     labels:
       SERVICE_TAGS: "urlprefix-/api/secu"
       SERVICE_CHECK_HTTP: "/status"
@@ -111,8 +104,6 @@ services:
       - registrator
       - fabio
     restart: always
-    ports:
-      - "8080" # HTTP server
     labels:
       SERVICE_TAGS: "urlprefix-/login"
       SERVICE_CHECK_HTTP: "/status"
@@ -124,10 +115,6 @@ services:
     image: nats:0.7.2
     container_name: nats
     restart: on-failure
-    ports:
-      - "8222:8222" # HTTP
-      - "6222:6222" # Clustering
-      - "4222:4222" # Client
     labels:
       SERVICE_4222_NAME: "nats-http"
       SERVICE_6222_NAME: "nats-clustering"
@@ -165,8 +152,6 @@ services:
     image: postgres:9.5
     container_name: root-app-postgres
     restart: on-failure
-    ports:
-      - 5433:5432
     labels:
       SERVICE_NAME: "agilestack-root-app-postgres"
     environment:
@@ -183,8 +168,6 @@ services:
       - registrator
       - fabio
     restart: on-failure
-    ports:
-      - "8080"
     environment:
       - DB_CONNECTION_STRING=user=agilestack password=agilestack_power dbname=agilestack_db host=root-app-postgres.agilestacknet port=5432 sslmode=disable
     volumes:
