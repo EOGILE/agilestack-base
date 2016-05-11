@@ -45,7 +45,7 @@ services:
       - consul
     restart: on-failure
     volumes:
-      - "/Users/jblanchard/src/go/src/github.com/eogile/agilestack-base/fabio.properties:/etc/fabio/fabio.properties"
+      - "$PWD/fabio.properties:/etc/fabio/fabio.properties"
     ports:
       - "8080:9999" # HTTP server
       - "9998:9998" # UI
