@@ -169,29 +169,12 @@ services:
     volumes:
       - shared:/shared
 
-  # AgileStack root app - database
-  # TODO Remove when Consul store will be used.
-  root-app-postgres:
-    image: postgres:9.5
-    container_name: root-app-postgres
-    restart: on-failure
-    ports:
-      - 5433:5432
-    labels:
-      SERVICE_NAME: "agilestack-root-app-postgres"
-    environment:
-      - POSTGRES_USER=agilestack
-      - POSTGRES_PASSWORD=agilestack_power
-      - POSTGRES_DB=agilestack_db
-
   # The API endpoint for the root application.
   root-app-builder:
     image: agilestack-root-app-builder
     build:
       context: ../agilestack-root-app/root-app-builder
     container_name: agilestack-root-app-builder
-    depends_on:
-      - root-app-postgres
       - registrator
       - fabio
     restart: on-failure
