@@ -175,6 +175,7 @@ services:
     build:
       context: ../agilestack-root-app/root-app-builder
     container_name: agilestack-root-app-builder
+    depends_on:
       - registrator
       - fabio
     restart: on-failure
