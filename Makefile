@@ -51,4 +51,18 @@ clean :
 		for project in $(PROJECTS) ; do make -C $$project clean; done
 
 
+############################
+#           RUN            #
+############################
+
+up:
+	docker-compose -f docker-compose-base-dev.yml up -d --remove-orphans
+
+down:
+	docker-compose -f docker-compose-base-dev.yml down --remove-orphans
+
+ps:
+	docker-compose -f docker-compose-base-dev.yml ps
+
+
 .PHONY : install docker-deploy setup submodules go-deps test $(PROJECTS)
